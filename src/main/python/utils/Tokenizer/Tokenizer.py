@@ -16,6 +16,8 @@ class SimpleTokenizer:
 
         self.stoi['<s>'] = 0
 
+        self.stoi['<mask>'] = len(self.vocab) + 2
+
         self.itos  = {i:s for s,i in self.stoi.items()}
 
         

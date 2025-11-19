@@ -20,6 +20,8 @@ class Embeddings:
         std = (2/fan_in) ** 0.5
 
         self.emb = torch.randn(vocab_size, d_model) * std
+        
+        self.emb.requires_grad_(True)
 
         self.max_len = max_len
 
@@ -51,9 +53,15 @@ class Embeddings:
 
         pos_emb   = self.pos_emb[:seq_len, :]
 
+
         token_emb = self.emb[x]
 
+
         return token_emb + pos_emb
+    
+    def parameters(self):
+        return [self.emb]
+    
     
     def plot_positional_encodings(self, vis_dims=0):
     
@@ -102,6 +110,8 @@ class Embeddings:
     def __call__(self,x):
 
         return self.forward(x)
+    
+
     
 
 

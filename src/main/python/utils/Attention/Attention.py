@@ -4,13 +4,13 @@ import torch.nn.functional as F
 
 class attentionLayer:
 
-    def __init__(self, num_heads, d_model, max_len, autoRegressive = False):
+    def __init__(self, head_dim, num_heads, max_len, autoRegressive = False):
 
-        self.d_model    = d_model
+        self.head_dim    = head_dim
 
         self.max_len    = max_len
 
-        self.num_heads  = num_heads 
+        self.num_heads = num_heads
 
         self.W_q        = self._get_qkv_weights()
 
@@ -20,29 +20,35 @@ class attentionLayer:
 
     def _get_qkv_weights(self):
 
-        # Input X dim: batch_dim, seq_len, d_model 
+        # Input X dim: batch_dim, seq_len, head_dim 
 
-        # dimentions of Wq: d_model x d_model - simple choice
+        # dimentions of Wq: head_dim x head_dim - simple choice
 
         # He Intialization
-        fan_in = self.d_model
+        fan_in = self.head_dim
 
         std = (2/fan_in) ** 0.5
 
-        return torch.randn(self.d_model, self.d_model// self.num_heads) * std
+        W = torch.randn(self.head_dim, self.head_dim) * std
+
+        W.requires_grad_(True)
+
+        return W
 
 
     def forward(self, x):
 
-        Q = x @ self.W_q # batch_size, seq_len, d_model
+        B, T, C = x.shape  # batch_size, seq_len, d_model
 
-        K = x @ self.W_k # batch_size, seq_len, d_model
+        Q = x.view(B, T, self.num_heads, self.head_dim) @ self.W_q # batch_size, seq_len, head_dim
 
-        V = x @ self.W_v # batch_size, seq_len, d_model
+        K = x.view(B, T, self.num_heads, self.head_dim) @ self.W_k # batch_size, seq_len, head_dim
 
-        sim_logits = Q @ K.transpose(1,2)/ (self.d_model**0.5)
+        V = x.view(B, T, self.num_heads, self.head_dim) @ self.W_v # batch_size, seq_len, head_dim
 
-        AttentionWeights = F.softmax(sim_logits, dim =1) @ V
+        sim_logits = Q @ K.transpose(-2,-1)/ ((self.head_dim)**0.5)
+
+        AttentionWeights = F.softmax(sim_logits, dim =-1) @ V
 
         return AttentionWeights
 
@@ -50,6 +56,10 @@ class attentionLayer:
     def __call__(self, x):
 
         return self.forward(x)
+
+
+    def parameters(self):
+        return [self.W_k, self.W_q, self.W_v]
 
 class multiHeads:
 
@@ -61,13 +71,24 @@ class multiHeads:
 
         self.d_model   = d_model
 
-        self.heads = [attentionLayer(d_model = d_model, num_heads = num_heads, max_len = max_len) for i in range(num_heads)]
+        self.heads = [attentionLayer(head_dim = d_model//num_heads, num_heads = num_heads, max_len = max_len) for i in range(num_heads)]
 
     def __call__(self, x):
 
         heads_out = [head(x) for head in self.heads]
 
-        return torch.cat(heads_out, dim =2)
+        return heads_out
+
+        # return torch.cat(heads_out, dim =-1)
+    
+    def parameters(self):
+        params = []
+
+        for ls in [_.parameters() for _ in self.heads]:
+
+            params += ls
+
+        return params
 
 class residualConnection:
 

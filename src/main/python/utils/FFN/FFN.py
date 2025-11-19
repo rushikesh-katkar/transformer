@@ -11,9 +11,9 @@ class feedForward:
         self.max_len    = max_len
         self.vocab_size = vocab_size
 
-        self.layer_1    = torch.randn(d_model,   2*d_model)
-        self.layer_2    = torch.randn(2*d_model, d_model)
-        self.linear     = torch.randn(d_model,   vocab_size)
+        self.layer_1    = torch.randn(d_model,   2*d_model, requires_grad=True)
+        self.layer_2    = torch.randn(2*d_model, d_model, requires_grad=True)
+        self.linear     = torch.randn(d_model,   vocab_size, requires_grad=True)
 
     def forward(self, x):
 
@@ -32,6 +32,9 @@ class feedForward:
         out    =  F.softmax(logits, dim = 2)
 
         return out
+    
+    def parameters(self):
+        return [self.layer_1, self.layer_2, self.linear]
     
 
 
