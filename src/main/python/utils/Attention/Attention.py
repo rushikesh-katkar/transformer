@@ -36,15 +36,17 @@ class attentionLayer:
         return W
 
 
-    def forward(self, x):
+    def forward(self, x, head_id):
 
         B, T, C = x.shape  # batch_size, seq_len, d_model
 
-        Q = x.view(B, T, self.num_heads, self.head_dim) @ self.W_q # batch_size, seq_len, head_dim
+        indices = torch.arange(B* self.num_heads).view(B, self.num_heads)[:, head_id]
 
-        K = x.view(B, T, self.num_heads, self.head_dim) @ self.W_k # batch_size, seq_len, head_dim
+        Q = x.view(B* self.num_heads, T, self.head_dim)[indices] @ self.W_q # batch_size, seq_len, head_dim
 
-        V = x.view(B, T, self.num_heads, self.head_dim) @ self.W_v # batch_size, seq_len, head_dim
+        K = x.view(B* self.num_heads, T, self.head_dim)[indices] @ self.W_k # batch_size, seq_len, head_dim
+
+        V = x.view(B* self.num_heads, T, self.head_dim)[indices] @ self.W_v # batch_size, seq_len, head_dim
 
         sim_logits = Q @ K.transpose(-2,-1)/ ((self.head_dim)**0.5)
 
@@ -53,9 +55,9 @@ class attentionLayer:
         return AttentionWeights
 
 
-    def __call__(self, x):
+    def __call__(self, x, head_id):
 
-        return self.forward(x)
+        return self.forward(x, head_id)
 
 
     def parameters(self):
@@ -73,13 +75,13 @@ class multiHeads:
 
         self.heads = [attentionLayer(head_dim = d_model//num_heads, num_heads = num_heads, max_len = max_len) for i in range(num_heads)]
 
+        self.head_ids = list(range(self.num_heads))
+
     def __call__(self, x):
 
-        heads_out = [head(x) for head in self.heads]
+        heads_out = [head(x, head_id) for (head, head_id) in zip(self.heads, self.head_ids)]
 
-        return heads_out
-
-        # return torch.cat(heads_out, dim =-1)
+        return torch.cat(heads_out, dim =-1)
     
     def parameters(self):
         params = []
