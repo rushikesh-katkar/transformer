@@ -12,6 +12,8 @@ class attentionLayer:
 
         self.num_heads = num_heads
 
+        self.d_model = self.num_heads * self.head_dim
+
         self.W_q        = self._get_qkv_weights()
 
         self.W_k        = self._get_qkv_weights()
@@ -25,7 +27,7 @@ class attentionLayer:
         # dimentions of Wq: head_dim x head_dim - simple choice
 
         # He Intialization
-        fan_in = self.head_dim
+        fan_in = self.d_model
 
         std = (2/fan_in) ** 0.5
 
@@ -40,19 +42,17 @@ class attentionLayer:
 
         B, T, C = x.shape  # batch_size, seq_len, d_model
 
-        indices = torch.arange(B* self.num_heads).view(B, self.num_heads)[:, head_id]
+        Q = x.view(B, T, self.num_heads,self.head_dim)[:, :, head_id, :] @ self.W_q # batch_size, seq_len, num_heads, head_dim @ head_dim, head_dim
 
-        Q = x.view(B* self.num_heads, T, self.head_dim)[indices] @ self.W_q # batch_size, seq_len, head_dim
+        K = x.view(B, T, self.num_heads,self.head_dim)[:, :, head_id, :] @ self.W_k # batch_size, seq_len, num_heads, head_dim @ head_dim, head_dim
 
-        K = x.view(B* self.num_heads, T, self.head_dim)[indices] @ self.W_k # batch_size, seq_len, head_dim
+        V = x.view(B, T, self.num_heads,self.head_dim)[:, :, head_id, :] @ self.W_v # batch_size, seq_len, num_heads, head_dim @ head_dim, head_dim
 
-        V = x.view(B* self.num_heads, T, self.head_dim)[indices] @ self.W_v # batch_size, seq_len, head_dim
+        sim_logits = Q @ K.transpose(-2,-1)/ ((self.head_dim)**0.5)                 # B, T, num_heads, head_dim  @ B, T, head_dim, num_head ==> B, T, num_heads, num_heads
 
-        sim_logits = Q @ K.transpose(-2,-1)/ ((self.head_dim)**0.5)
+        AttentionWeights = F.softmax(sim_logits, dim =-1) @ V                       # B, T, num_heads, num_heads @ B, T, num_heads, head_dim
 
-        AttentionWeights = F.softmax(sim_logits, dim =-1) @ V
-
-        return AttentionWeights
+        return AttentionWeights                                                     # B, T, num_heads, head_dim
 
 
     def __call__(self, x, head_id):
@@ -81,7 +81,9 @@ class multiHeads:
 
         heads_out = [head(x, head_id) for (head, head_id) in zip(self.heads, self.head_ids)]
 
-        return torch.cat(heads_out, dim =-1)
+        # return heads_out
+
+        return torch.cat(heads_out, dim = -1)
     
     def parameters(self):
         params = []
