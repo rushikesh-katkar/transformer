@@ -35,30 +35,30 @@ class feedForward:
         return [self.layer_1, self.layer_2, self.linear]
     
 
-class Linear:
+# class Linear:
 
-    def __init__(self, d_model, max_len, vocab_size):
+#     def __init__(self, d_model, max_len, vocab_size):
 
-        self.d_model    = d_model
-        self.max_len    = max_len
-        self.vocab_size = vocab_size
+#         self.d_model    = d_model
+#         self.max_len    = max_len
+#         self.vocab_size = vocab_size
 
-        self.linear     = torch.randn(d_model,   vocab_size, requires_grad=True)
+#         self.linear     = torch.randn(d_model,   vocab_size, requires_grad=True)
 
-    def forward(self, x):
+#     def forward(self, x):
 
-        return x @ self.lnear
+#         return x @ self.lnear
     
-    def __call__(self, x):
+#     def __call__(self, x):
 
-        logits =  self.forward(x)
+#         logits =  self.forward(x)
 
-        out    =  F.softmax(logits, dim = 2)
+#         out    =  F.softmax(logits, dim = 2)
 
-        return out
+#         return out
     
-    def parameters(self):
-        return [self.layer_1, self.layer_2, self.linear]
+#     def parameters(self):
+#         return [self.layer_1, self.layer_2, self.linear]
 
 
     
