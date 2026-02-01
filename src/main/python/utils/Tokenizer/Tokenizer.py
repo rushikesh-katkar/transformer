@@ -32,7 +32,7 @@ class SimpleTokenizer:
             return torch.tensor([self.stoi[s] for s in list(x)], device=self.device).reshape(1,len(x))
     
     def decode(self, x):
-
+        x = x.detach().cpu()
         return ''.join([self.itos[i.item()] for i in x.reshape(x.shape[1])])
     
 
