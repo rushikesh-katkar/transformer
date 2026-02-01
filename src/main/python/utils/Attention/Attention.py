@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class attentionLayer:
 
-    def __init__(self, head_dim, num_heads, max_len, autoRegressive = False):
+    def __init__(self, head_dim, num_heads, max_len, autoRegressive = False, device = None):
 
         self.head_dim    = head_dim
 
@@ -13,6 +13,11 @@ class attentionLayer:
         self.num_heads = num_heads
 
         self.d_model = self.num_heads * self.head_dim
+
+        if device == None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.device = device
 
         self.W_q        = self._get_qkv_weights()
 
@@ -31,7 +36,7 @@ class attentionLayer:
 
         std = (2/fan_in) ** 0.5
 
-        W = torch.randn(self.head_dim, self.head_dim) * std
+        W = torch.randn(self.head_dim, self.head_dim, device=self.device) * std
 
         W.requires_grad_(True)
 
@@ -65,7 +70,7 @@ class attentionLayer:
 
 class multiHeads:
 
-    def __init__(self, num_heads, d_model,  max_len):
+    def __init__(self, num_heads, d_model,  max_len, device  = None):
 
         self.num_heads = num_heads
 
@@ -73,7 +78,12 @@ class multiHeads:
 
         self.d_model   = d_model
 
-        self.heads = [attentionLayer(head_dim = d_model//num_heads, num_heads = num_heads, max_len = max_len) for i in range(num_heads)]
+        if device == None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.device = device
+
+        self.heads = [attentionLayer(head_dim = d_model//num_heads, num_heads = num_heads, max_len = max_len, device= self.device) for i in range(num_heads)]
 
         self.head_ids = list(range(self.num_heads))
 

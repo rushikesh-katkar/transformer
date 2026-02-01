@@ -5,15 +5,20 @@ import torch.nn.functional as F
 
 class feedForward:
 
-    def __init__(self, d_model, max_len, vocab_size):
+    def __init__(self, d_model, max_len, vocab_size, device = None):
 
         self.d_model    = d_model
         self.max_len    = max_len
         self.vocab_size = vocab_size
 
-        self.layer_1    = torch.randn(d_model,   2*d_model, requires_grad=True)
-        self.layer_2    = torch.randn(2*d_model, d_model, requires_grad=True)
-        self.linear     = torch.randn(d_model,   vocab_size, requires_grad=True)
+        if device == None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.device = device
+
+        self.layer_1    = torch.randn(d_model,   2*d_model, requires_grad=True, device = self.device)
+        self.layer_2    = torch.randn(2*d_model, d_model, requires_grad=True, device = self.device)
+        self.linear     = torch.randn(d_model,   vocab_size, requires_grad=True, device = self.device)
 
     def forward(self, x):
 

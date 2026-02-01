@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 class Embeddings:
-    def __init__(self, vocab_size, d_model, max_len):
+    def __init__(self, vocab_size, d_model, max_len,device = None):
         """
         Vocab size: vocabulary size
         d_model: embeddings dimentions 
@@ -19,11 +19,14 @@ class Embeddings:
 
         std = (2/fan_in) ** 0.5
 
-        self.emb = torch.randn(vocab_size, d_model)
+        if device == None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.device = device
+
+        self.emb = torch.randn(vocab_size, d_model, device  = device)
         
         self.emb = (self.emb * std).requires_grad_()
-
-
 
         # self.emb = torch.randn(vocab_size, d_model)
 
@@ -41,11 +44,11 @@ class Embeddings:
 
         ## this function generates new encodings
 
-        pe = torch.zeros(max_len, d_model)
+        pe = torch.zeros(max_len, d_model, device = self.device)
 
-        positions = torch.arange(0, max_len, dtype = torch.float).unsqueeze(1)
+        positions = torch.arange(0, max_len, dtype = torch.float, device = self.device).unsqueeze(1)
 
-        dims = torch.arange(0, d_model , dtype = torch.float).reshape(1, -1)
+        dims = torch.arange(0, d_model , dtype = torch.float, device = self.device).reshape(1, -1)
 
         denom = 1/10000**(2*(dims//2)/d_model)
 

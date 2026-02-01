@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class SimpleTokenizer:
 
-    def __init__(self, vocab):
+    def __init__(self, vocab, device = None):
         
         self.vocab = vocab
 
@@ -20,12 +20,16 @@ class SimpleTokenizer:
 
         self.itos  = {i:s for s,i in self.stoi.items()}
 
-        
+        if device == None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.device = device
+
     def encode(self, x, pad = False):
         if pad:
-            return torch.tensor([0]+ [self.stoi[s] for s in list(x)] + [len(self.vocab) + 1]).reshape(1,len(x) + 2)
+            return torch.tensor([0]+ [self.stoi[s] for s in list(x)] + [len(self.vocab) + 1], device=self.device).reshape(1,len(x) + 2)
         else:
-            return torch.tensor([self.stoi[s] for s in list(x)]).reshape(1,len(x))
+            return torch.tensor([self.stoi[s] for s in list(x)], device=self.device).reshape(1,len(x))
     
     def decode(self, x):
 
